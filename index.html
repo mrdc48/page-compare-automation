@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Page Content Comparison</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+
+
+h1, h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Input Area */
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+button {
+    background-color: #4CAF50; /* Green */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+
+/* Output Area */
+#output {
+    margin-top: 20px;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+}
+
+#output pre {
+    white-space: pre-wrap;
+    font-family: 'Consolas', monospace; /* Code-friendly font */
+    background-color: #f0f0f0; /* Light background for code */
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Highlighting */
+.match {
+    background-color: #e9f7e9; /* Light green for matches */
+}
+
+.mismatch {
+    background-color: #ffe5e5; /* Light red for mismatches */
+}
+
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/4.0.2/diff.min.js"></script>
+</head>
+<body>
+    <h1>Page Content Comparison</h1>
+
+    <div>
+        <label for="url1">URL 1:</label>
+        <input type="text" id="url1" />
+    </div>
+    <div>
+        <label for="url2">URL 2:</label>
+        <input type="text" id="url2" />
+    </div>
+
+    <label for="ignoreWhitespace">Ignore Whitespace:</label>
+    <input type="checkbox" id="ignoreWhitespace">
+    <label for="ignoreCase">Ignore Case:</label>
+    <input type="checkbox" id="ignoreCase">
+
+    <button onclick="comparePages()">Compare</button>
+
+    <div id="output">
+        <h2>Comparison Results</h2>
+        <pre></pre>
+    </div>
+
+    <script>
+        async function comparePages() {
+            const url1 = document.getElementById("url1").value;
+            const url2 = document.getElementById("url2").value;
+
+            try {
+                const [response1, response2] = await Promise.all([
+                    fetch(url1),
+                    fetch(url2)
+                ]);
+
+                if (response1.ok && response2.ok) {
+                    let text1 = await response1.text();
+                    let text2 = await response2.text();
+
+                    const ignoreWhitespace = document.getElementById("ignoreWhitespace").checked;
+                    const ignoreCase = document.getElementById("ignoreCase").checked;
+
+                    // Normalize whitespace
+                    if (ignoreWhitespace) {
+                        text1 = text1.replace(/\s+/g, ' ');
+                        text2 = text2.replace(/\s+/g, ' ');
+                    }
+
+                    // Ignore case
+                    if (ignoreCase) {
+                        text1 = text1.toLowerCase();
+                        text2 = text2.toLowerCase();
+                    }
+
+                    const diff = Diff.diffWords(text1, text2);
+
+                    // Output
+                    const output = document.querySelector("#output pre");
+                    output.innerHTML = ''; // Clear previous output
+
+                    diff.forEach(part => {
+                        const span = document.createElement("span");
+                        span.textContent = part.value;
+                        span.classList.add(part.added ? "mismatch" : part.removed ? "mismatch" : "match");
+                        output.appendChild(span);
+                    });
+                } else {
+                    throw new Error("Failed to fetch one or both pages.");
+                }
+            } catch (error) {
+                console.error("Error comparing pages:", error);
+                document.querySelector("#output pre").textContent = "Error comparing pages. See console for details.";
+            }
+        }
+    </script>
+</body>
+</html>
